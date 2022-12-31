@@ -239,6 +239,7 @@ pub enum RawActionType {
     Monitor,
     Custom,
     Challenge,
+    Identity,
 }
 
 impl std::default::Default for RawActionType {

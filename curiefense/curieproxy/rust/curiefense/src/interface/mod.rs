@@ -460,6 +460,7 @@ pub enum SimpleActionT {
     Monitor,
     Custom { content: String },
     Challenge,
+    Identity,
 }
 
 impl SimpleActionT {
@@ -470,6 +471,7 @@ impl SimpleActionT {
             Challenge => 6,
             Monitor => 1,
             Skip => 9,
+            Identity => 2,
         }
     }
 
@@ -480,7 +482,7 @@ impl SimpleActionT {
     pub fn to_bdecision(&self) -> BDecision {
         match self {
             SimpleActionT::Skip => BDecision::Skip,
-            SimpleActionT::Monitor => BDecision::Monitor,
+            SimpleActionT::Monitor | SimpleActionT::Identity => BDecision::Monitor,
             SimpleActionT::Challenge | SimpleActionT::Custom { content: _ } => BDecision::Blocking,
         }
     }
@@ -578,6 +580,7 @@ impl SimpleAction {
                 content: rawaction.params.content.clone().unwrap_or_default(),
             },
             RawActionType::Challenge => SimpleActionT::Challenge,
+            RawActionType::Identity => SimpleActionT::Identity,
         };
         let status = rawaction.params.status.unwrap_or(503);
         let headers = rawaction.params.headers.as_ref().map(|hm| {
@@ -614,7 +617,7 @@ impl SimpleAction {
         });
         match &self.atype {
             SimpleActionT::Skip => action.atype = ActionType::Skip,
-            SimpleActionT::Monitor => action.atype = ActionType::Monitor,
+            SimpleActionT::Monitor | SimpleActionT::Identity => action.atype = ActionType::Monitor,
             SimpleActionT::Custom { content } => {
                 action.atype = ActionType::Block;
                 action.content = content.clone();
