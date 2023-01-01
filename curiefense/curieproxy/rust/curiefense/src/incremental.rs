@@ -251,7 +251,8 @@ pub async fn finalize<GH: Grasshopper>(
         false
     };
 
-    let (mut tags, globalfilter_dec, stats) = tag_request(idata.stats, is_human, globalfilters, &reqinfo, &vtags);
+    logs.debug(|| format!("rinfo {:?}", reqinfo));
+    let (mut tags, globalfilter_dec, stats) = tag_request(idata.stats, is_human, globalfilters, &reqinfo, &vtags, &mut logs);
     tags.insert("all", Location::Request);
 
     let dec = analyze(

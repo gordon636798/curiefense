@@ -169,7 +169,9 @@ pub fn inspect_generic_request_map_init<GH: Grasshopper>(
                         false
                     };
 
-                    let ntags = tag_request(stats, is_human, &cfg.globalfilters, &reqinfo, &cfg.virtual_tags);
+                    // slogs.debug(|| format!("rinfo {:?}", reqinfo));
+                    let ntags = tag_request(stats, is_human, &cfg.globalfilters, &reqinfo, &cfg.virtual_tags, slogs);
+                    slogs.debug(|| format!("ntag: {:?}", ntags.1));
                     RequestMappingResult::Res((ntags, nflows, reqinfo, is_human))
                 }
                 None => RequestMappingResult::NoSecurityPolicy,

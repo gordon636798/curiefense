@@ -522,6 +522,7 @@ pub enum ActionType {
     Skip,
     Monitor,
     Block,
+    Identity,
 }
 
 impl ActionType {
@@ -540,6 +541,7 @@ impl ActionType {
             ActionType::Block => 6,
             ActionType::Monitor => 1,
             ActionType::Skip => 9,
+            ActionType::Identity => 2,
         }
     }
 }
@@ -617,7 +619,7 @@ impl SimpleAction {
         });
         match &self.atype {
             SimpleActionT::Skip => action.atype = ActionType::Skip,
-            SimpleActionT::Monitor | SimpleActionT::Identity => action.atype = ActionType::Monitor,
+            SimpleActionT::Monitor  => action.atype = ActionType::Monitor,
             SimpleActionT::Custom { content } => {
                 action.atype = ActionType::Block;
                 action.content = content.clone();
@@ -627,7 +629,8 @@ impl SimpleAction {
                     return None;
                 }
                 action.atype = ActionType::Monitor;
-            }
+            },
+            SimpleActionT::Identity => action.atype = ActionType::Identity,
         }
         Some(action)
     }

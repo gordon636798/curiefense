@@ -9,6 +9,7 @@ use crate::requestfields::RequestField;
 use crate::utils::RequestInfo;
 use std::collections::{HashMap, HashSet};
 use std::net::IpAddr;
+use crate::logs::Logs;
 
 struct MatchResult {
     matched: HashSet<Location>,
@@ -179,6 +180,7 @@ pub fn tag_request(
     globalfilters: &[GlobalFilterSection],
     rinfo: &RequestInfo,
     vtags: &VirtualTags,
+    logs: &mut Logs,
 ) -> (Tags, SimpleDecision, StatsCollect<BStageMapped>) {
     let mut tags = Tags::new(vtags);
     if is_human {
@@ -286,6 +288,12 @@ pub fn tag_request(
                 if a.atype == SimpleActionT::Monitor {
                     monitor_headers.extend(a.headers.clone().unwrap_or_default());
                 }
+                if a.atype == SimpleActionT::Identity {
+                    monitor_headers.extend(a.headers.clone().unwrap_or_default());
+                    // TODO:
+                    // read request info headers
+                }
+                logs.debug(|| format!("monitor_header {:?}", monitor_headers));             
                 let curdec = SimpleDecision::Action(
                     a.clone(),
                     vec![BlockReason::global_filter(
@@ -295,21 +303,24 @@ pub fn tag_request(
                         &mtch.matched,
                     )],
                 );
+                logs.debug(|| format!("curdec {:?}", curdec));             
 
                 decision = stronger_decision(decision, curdec);
             }
         }
     }
+    logs.debug(|| format!("decision1 {:?}", decision)); 
 
     // if the final decision is a monitor, use cumulated monitor headers as headers
     decision = if let SimpleDecision::Action(mut action, block_reasons) = decision {
-        if action.atype == SimpleActionT::Monitor {
+        if action.atype == SimpleActionT::Monitor || action.atype == SimpleActionT::Identity {
             action.headers = Some(monitor_headers);
         }
         SimpleDecision::Action(action, block_reasons)
     } else {
         decision
     };
+    logs.debug(|| format!("decision2 {:?}", decision)); 
 
     (tags, decision, stats.mapped(globalfilters.len(), matched))
 }

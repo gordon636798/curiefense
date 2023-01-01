@@ -23,24 +23,24 @@
         "source": "self-managed"
     },
     {
-        "id": "test-monitor",
-        "name": "test-monitor",
-        "description": "test-monitor",
+        "id": "test-root-monitor",
+        "name": "test-root-monitor",
+        "description": "test-root-monitor",
         "tags": [
-            "test-monitor"
+            "test-root-monitor"
         ],
         "rule": {
             "entries": [
                 [
                     "uri",
-                    "/",
+                    "/test2",
                     "content type"
                 ]
 
             ],
             "relation": "OR"
         },
-        "action": "action-monitor",
+        "action": "action-monitor2",
         "active": true,
         "mdate": "2020-05-23T00:04:41",
         "source": "self-managed"

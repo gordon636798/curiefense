@@ -738,6 +738,8 @@ pub fn map_request(
         .filter_map(|s| select_string(&dummy_reqinfo, s, None).map(|str| (s.to_string(), session_string(&str))))
         .collect();
 
+    // logs.debug(|| format!("MAP headers {:?}", dummy_reqinfo.headers));
+
     RequestInfo {
         timestamp: dummy_reqinfo.timestamp,
         cookies: dummy_reqinfo.cookies,
