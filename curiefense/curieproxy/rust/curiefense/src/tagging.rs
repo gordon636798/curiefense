@@ -5,13 +5,13 @@ use crate::config::raw::Relation;
 use crate::config::virtualtags::VirtualTags;
 use crate::interface::stats::{BStageMapped, BStageSecpol, StatsCollect};
 use crate::interface::{stronger_decision, BlockReason, Location, SimpleActionT, SimpleDecision, Tags};
-use crate::requestfields::RequestField;
-use crate::utils::RequestInfo;
-use std::collections::{HashMap, HashSet};
-use std::fmt::format;
-use std::net::IpAddr;
 use crate::logs::Logs;
+use crate::requestfields::RequestField;
 use crate::utils::templating::parse_request_template;
+use crate::utils::RequestInfo;
+use sha2::{Digest, Sha256};
+use std::collections::{HashMap, HashSet};
+use std::net::IpAddr;
 
 struct MatchResult {
     matched: HashSet<Location>,
@@ -289,8 +289,7 @@ pub fn tag_request(
                 // merge headers from Monitor decision
                 if a.atype == SimpleActionT::Monitor {
                     monitor_headers.extend(a.headers.clone().unwrap_or_default());
-                }
-                else if a.atype == SimpleActionT::Identity {
+                } else if a.atype == SimpleActionT::Identity {
                     // TODO:
                     // read request info headers
                     let rinfo_headers = &rinfo.headers;
@@ -303,18 +302,21 @@ pub fn tag_request(
                             Some(k) => {
                                 logs.debug(|| format!("key: {:?}, v: {:?}", k, _v));
                                 identity.push_str(k);
-                            },
-                            None => identity.push_str("55")
+                            }
+                            None => identity.push_str("55"),
                         }
                         identity.push(',');
                     }
+                    let mut hasher = Sha256::new();
+                    hasher.update(identity);
+                    let result = format!("{:X}", hasher.finalize());
+                    logs.debug(|| format!("hash result {:?}", result));
                     let mut identity_hash = HashMap::new();
-                    identity_hash.insert(String::from("identity"), parse_request_template(&identity));
+                    identity_hash.insert(String::from("identity"), parse_request_template(&result));
 
                     monitor_headers.extend(identity_hash);
-
                 }
-                logs.debug(|| format!("monitor_header {:?}", monitor_headers));             
+                logs.debug(|| format!("monitor_header {:?}", monitor_headers));
                 let curdec = SimpleDecision::Action(
                     a.clone(),
                     vec![BlockReason::global_filter(
@@ -324,13 +326,13 @@ pub fn tag_request(
                         &mtch.matched,
                     )],
                 );
-                logs.debug(|| format!("curdec {:?}", curdec));             
+                logs.debug(|| format!("curdec {:?}", curdec));
 
                 decision = stronger_decision(decision, curdec);
             }
         }
     }
-    logs.debug(|| format!("decision1 {:?}", decision)); 
+    logs.debug(|| format!("decision1 {:?}", decision));
 
     // if the final decision is a monitor, use cumulated monitor headers as headers
     decision = if let SimpleDecision::Action(mut action, block_reasons) = decision {
@@ -341,7 +343,7 @@ pub fn tag_request(
     } else {
         decision
     };
-    logs.debug(|| format!("decision2 {:?}", decision)); 
+    logs.debug(|| format!("decision2 {:?}", decision));
 
     (tags, decision, stats.mapped(globalfilters.len(), matched))
 }

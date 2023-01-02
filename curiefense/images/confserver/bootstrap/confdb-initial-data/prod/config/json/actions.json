@@ -121,7 +121,8 @@
             "status": 200,
             "headers": {
                 "user-agent": "",
-                "identity-test": ""
+                "identity-test": "",
+                "host": ""
             },
             "content": "identity"
         }
