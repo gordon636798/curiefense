@@ -8,8 +8,10 @@ use crate::interface::{stronger_decision, BlockReason, Location, SimpleActionT, 
 use crate::requestfields::RequestField;
 use crate::utils::RequestInfo;
 use std::collections::{HashMap, HashSet};
+use std::fmt::format;
 use std::net::IpAddr;
 use crate::logs::Logs;
+use crate::utils::templating::parse_request_template;
 
 struct MatchResult {
     matched: HashSet<Location>,
@@ -288,10 +290,29 @@ pub fn tag_request(
                 if a.atype == SimpleActionT::Monitor {
                     monitor_headers.extend(a.headers.clone().unwrap_or_default());
                 }
-                if a.atype == SimpleActionT::Identity {
-                    monitor_headers.extend(a.headers.clone().unwrap_or_default());
+                else if a.atype == SimpleActionT::Identity {
                     // TODO:
                     // read request info headers
+                    let rinfo_headers = &rinfo.headers;
+                    logs.debug(|| format!("rinfo_header {:?}", rinfo_headers));
+                    let mut identity = String::from("");
+                    // logs.debug(|| format!("a.header {:?}", a.headers));
+                    for (k, _v) in a.headers.clone().unwrap_or_default() {
+                        logs.debug(|| format!("travelsal k: {:?}", k));
+                        match rinfo_headers.get(&k) {
+                            Some(k) => {
+                                logs.debug(|| format!("key: {:?}, v: {:?}", k, _v));
+                                identity.push_str(k);
+                            },
+                            None => identity.push_str("55")
+                        }
+                        identity.push(',');
+                    }
+                    let mut identity_hash = HashMap::new();
+                    identity_hash.insert(String::from("identity"), parse_request_template(&identity));
+
+                    monitor_headers.extend(identity_hash);
+
                 }
                 logs.debug(|| format!("monitor_header {:?}", monitor_headers));             
                 let curdec = SimpleDecision::Action(

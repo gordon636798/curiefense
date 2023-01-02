@@ -120,7 +120,8 @@
         "params": {
             "status": 200,
             "headers": {
-                "identity": "888777"
+                "user-agent": "",
+                "identity-test": ""
             },
             "content": "identity"
         }
