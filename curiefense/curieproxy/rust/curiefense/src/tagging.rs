@@ -290,36 +290,31 @@ pub fn tag_request(
                 if a.atype == SimpleActionT::Monitor {
                     monitor_headers.extend(a.headers.clone().unwrap_or_default());
                 } else if a.atype == SimpleActionT::Identity {
-                    logs.info("Identity");
                     // TODO:
                     // read request info headers
                     let rinfo_headers = &rinfo.headers;
-                    logs.debug(|| format!("rinfo_header {:?}", rinfo_headers));
                     let mut identity = String::from("");
                     // logs.debug(|| format!("a.header {:?}", a.headers));
                     let mut headers_vec: Vec<String> = a.headers.clone().unwrap_or_default().into_keys().collect();
                     headers_vec.sort();
                     for k in headers_vec {
-                        logs.debug(|| format!("travelsal k: {:?}", k));
                         match rinfo_headers.get(&k) {
                             Some(v) => {
-                                logs.debug(|| format!("v: {:?}", v));
                                 identity.push_str(v);
                             }
-                            None => identity.push_str("55"),
+                            None => identity.push_str("none"),
                         }
-                        identity.push(',');
+                        identity.push('.');
                     }
                     let mut hasher = Sha256::new();
                     hasher.update(identity);
                     let result = format!("{:X}", hasher.finalize());
-                    logs.debug(|| format!("hash result {:?}", result));
                     let mut identity_hash = HashMap::new();
                     identity_hash.insert(String::from("identity"), parse_request_template(&result));
+                    tags.insert_qualified("identity", &result, Location::Headers);
 
                     monitor_headers.extend(identity_hash);
                 }
-                logs.debug(|| format!("monitor_header {:?}", monitor_headers));
                 let curdec = SimpleDecision::Action(
                     a.clone(),
                     vec![BlockReason::global_filter(
@@ -329,13 +324,11 @@ pub fn tag_request(
                         &mtch.matched,
                     )],
                 );
-                logs.debug(|| format!("curdec {:?}", curdec));
 
                 decision = stronger_decision(decision, curdec);
             }
         }
     }
-    logs.debug(|| format!("decision1 {:?}", decision));
 
     // if the final decision is a monitor, use cumulated monitor headers as headers
     decision = if let SimpleDecision::Action(mut action, block_reasons) = decision {
@@ -346,7 +339,7 @@ pub fn tag_request(
     } else {
         decision
     };
-    logs.debug(|| format!("decision2 {:?}", decision));
+    // logs.debug(|| format!("decision2 {:?}", decision));
 
     (tags, decision, stats.mapped(globalfilters.len(), matched))
 }
