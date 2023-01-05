@@ -290,18 +290,21 @@ pub fn tag_request(
                 if a.atype == SimpleActionT::Monitor {
                     monitor_headers.extend(a.headers.clone().unwrap_or_default());
                 } else if a.atype == SimpleActionT::Identity {
+                    logs.info("Identity");
                     // TODO:
                     // read request info headers
                     let rinfo_headers = &rinfo.headers;
                     logs.debug(|| format!("rinfo_header {:?}", rinfo_headers));
                     let mut identity = String::from("");
                     // logs.debug(|| format!("a.header {:?}", a.headers));
-                    for (k, _v) in a.headers.clone().unwrap_or_default() {
+                    let mut headers_vec: Vec<String> = a.headers.clone().unwrap_or_default().into_keys().collect();
+                    headers_vec.sort();
+                    for k in headers_vec {
                         logs.debug(|| format!("travelsal k: {:?}", k));
                         match rinfo_headers.get(&k) {
-                            Some(k) => {
-                                logs.debug(|| format!("key: {:?}, v: {:?}", k, _v));
-                                identity.push_str(k);
+                            Some(v) => {
+                                logs.debug(|| format!("v: {:?}", v));
+                                identity.push_str(v);
                             }
                             None => identity.push_str("55"),
                         }
