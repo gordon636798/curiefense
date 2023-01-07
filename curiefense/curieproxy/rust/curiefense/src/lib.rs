@@ -147,7 +147,7 @@ pub fn inspect_generic_request_map_init<GH: Grasshopper>(
                     let stats = StatsCollect::new(slogs.start, cfg.revision.clone())
                         .secpol(SecpolStats::build(&secpolicy, cfg.globalfilters.len()));
                     // if the max depth is equal to 0, the body will not be parsed
-                    let reqinfo = map_request(
+                    let mut reqinfo = map_request(
                         slogs,
                         secpolicy,
                         cfg.container_name.clone(),
@@ -170,7 +170,14 @@ pub fn inspect_generic_request_map_init<GH: Grasshopper>(
                     };
 
                     // slogs.debug(|| format!("rinfo {:?}", reqinfo));
-                    let ntags = tag_request(stats, is_human, &cfg.globalfilters, &reqinfo, &cfg.virtual_tags, slogs);
+                    let ntags = tag_request(
+                        stats,
+                        is_human,
+                        &cfg.globalfilters,
+                        &mut reqinfo,
+                        &cfg.virtual_tags,
+                        slogs,
+                    );
                     // slogs.debug(|| format!("ntag: {:?}", ntags.1));
                     RequestMappingResult::Res((ntags, nflows, reqinfo, is_human))
                 }

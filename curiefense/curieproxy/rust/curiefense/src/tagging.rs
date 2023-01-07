@@ -180,7 +180,7 @@ pub fn tag_request(
     stats: StatsCollect<BStageSecpol>,
     is_human: bool,
     globalfilters: &[GlobalFilterSection],
-    rinfo: &RequestInfo,
+    rinfo: &mut RequestInfo,
     vtags: &VirtualTags,
     logs: &mut Logs,
 ) -> (Tags, SimpleDecision, StatsCollect<BStageMapped>) {
@@ -311,7 +311,11 @@ pub fn tag_request(
                     let result = format!("{:X}", hasher.finalize());
                     let mut identity_hash = HashMap::new();
                     identity_hash.insert(String::from("identity"), parse_request_template(&result));
-                    tags.insert_qualified("identity", &result, Location::Headers);
+                    // tags.insert_qualified("identity", &result, Location::Headers);
+                    rinfo.identity.add(String::from("identity"), Location::Headers, result);
+                    rinfo
+                        .identity
+                        .add(String::from("testing"), Location::Headers, String::from("fuck"));
 
                     monitor_headers.extend(identity_hash);
                 }

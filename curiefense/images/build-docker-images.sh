@@ -33,8 +33,8 @@ if [ -n "$TESTIMG" ]; then
     DOCKER_TAG="test"
     echo "Building only image $TESTIMG"
 else
-    IMAGES=(confserver curieproxy-istio curieproxy-envoy \
-        curieproxy-nginx curiesync grafana prometheus extproc \
+    IMAGES=(confserver\
+        curieproxy-nginx curiesync \
         redis traffic-metrics-exporter)
 fi
 

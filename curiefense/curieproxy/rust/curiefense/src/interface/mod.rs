@@ -242,6 +242,9 @@ pub fn jsonlog_rinfo(
     map_ser.serialize_entry("restriction_triggers", get_trigger(&InitiatorKind::Restriction))?;
     map_ser.serialize_entry("reason", &block_reason_desc)?;
 
+    // test identity
+    map_ser.serialize_entry("identity_headers", &rinfo.identity)?;
+
     // it's too bad one can't directly write the recursive structures from just the serializer object
     // that's why there are several one shot structures for nested data:
     struct LogTags<'t> {
@@ -627,7 +630,7 @@ impl SimpleAction {
                     return None;
                 }
                 action.atype = ActionType::Monitor;
-            },
+            }
         }
         Some(action)
     }

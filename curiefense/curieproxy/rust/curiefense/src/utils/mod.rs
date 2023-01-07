@@ -350,6 +350,7 @@ pub struct RequestInfo {
     pub session: String,
     pub session_ids: HashMap<String, String>,
     pub plugins: RequestField,
+    pub identity: RequestField,
 }
 
 impl RequestInfo {
@@ -711,6 +712,7 @@ pub fn map_request(
         session: String::new(),
         session_ids: HashMap::new(),
         plugins: plugins_field,
+        identity: RequestField::new(&[]),
     };
 
     let raw_session = (if secpolicy.session.is_empty() {
@@ -748,6 +750,7 @@ pub fn map_request(
         session,
         session_ids,
         plugins: dummy_reqinfo.plugins,
+        identity: dummy_reqinfo.identity,
     }
 }
 
