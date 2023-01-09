@@ -312,10 +312,10 @@ pub fn tag_request(
                     let mut identity_hash = HashMap::new();
                     identity_hash.insert(String::from("identity"), parse_request_template(&result));
                     // tags.insert_qualified("identity", &result, Location::Headers);
-                    rinfo.identity.add(String::from("identity"), Location::Headers, result);
-                    rinfo
-                        .identity
-                        .add(String::from("testing"), Location::Headers, String::from("fuck"));
+
+                    // testing
+                    rinfo.identity.insert(String::from("identity"), result);
+                    rinfo.identity.insert(String::from("testing"), String::from("fuck"));
 
                     monitor_headers.extend(identity_hash);
                 }

@@ -350,7 +350,7 @@ pub struct RequestInfo {
     pub session: String,
     pub session_ids: HashMap<String, String>,
     pub plugins: RequestField,
-    pub identity: RequestField,
+    pub identity: HashMap<String, String>,
 }
 
 impl RequestInfo {
@@ -660,6 +660,7 @@ pub fn map_request(
     let host = raw.get_host();
 
     logs.debug("map_request starts");
+    logs.info(|| format!("decoding {:?}", &secpolicy.content_filter_profile.decoding));
     let (headers, cookies) = map_headers(&secpolicy.content_filter_profile.decoding, &raw.headers);
     logs.debug("headers mapped");
     let geoip = find_geoip(logs, raw.ipstr.clone());
@@ -712,7 +713,7 @@ pub fn map_request(
         session: String::new(),
         session_ids: HashMap::new(),
         plugins: plugins_field,
-        identity: RequestField::new(&[]),
+        identity: HashMap::new(),
     };
 
     let raw_session = (if secpolicy.session.is_empty() {
