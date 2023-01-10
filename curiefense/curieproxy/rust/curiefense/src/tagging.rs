@@ -12,6 +12,8 @@ use crate::utils::RequestInfo;
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
 use std::net::IpAddr;
+use regex::{Regex, escape};
+use crate::utils::templating::TemplatePart;
 
 struct MatchResult {
     matched: HashSet<Location>,
@@ -180,7 +182,7 @@ pub fn tag_request(
     stats: StatsCollect<BStageSecpol>,
     is_human: bool,
     globalfilters: &[GlobalFilterSection],
-    rinfo: &mut RequestInfo,
+    rinfo: &RequestInfo,
     vtags: &VirtualTags,
     logs: &mut Logs,
 ) -> (Tags, SimpleDecision, StatsCollect<BStageMapped>) {
@@ -298,24 +300,46 @@ pub fn tag_request(
                     let mut headers_vec: Vec<String> = a.headers.clone().unwrap_or_default().into_keys().collect();
                     headers_vec.sort();
                     for k in headers_vec {
-                        match rinfo_headers.get(&k) {
+                        // let re_str = String::from(".*") ;
+                        match rinfo_headers.get(&k) {  
                             Some(v) => {
-                                identity.push_str(v);
+                                logs.debug(|| format!("a1.header = {:?}", a.headers));
+                                let temp_vec = a.headers.as_ref().unwrap().get(&k).unwrap(); //get(0).unwrap();
+                                logs.debug(|| format!("temp_vec = {:?}", temp_vec));
+                                if temp_vec.is_empty() == false {
+                                    let mut tmp_re = String::from("");
+                                    for temp in temp_vec {
+                                        match temp {
+                                            TemplatePart::Raw(s) => tmp_re.push_str(s),
+                                            _ => {},
+                                        }
+                                    }
+                                    logs.debug(|| format!("tmp_re {:?}", tmp_re));
+                                    let re = Regex::new( tmp_re.as_str()).unwrap();
+                                    match re.find(v) {
+                                        Some(m) => identity.push_str(&v[m.start()..m.end()]),
+                                        _ => identity.push_str("none"),
+                                    }
+                                    // logs.debug(|| format!("re = {:?}, re_str = {:?}", re, re_str));
+                                    
+                                }
+                                else {
+                                    identity.push_str(v);
+                                }
+
                             }
                             None => identity.push_str("none"),
                         }
-                        identity.push('.');
+                        identity.push('.');                   
                     }
+                    
+                    logs.debug(|| format!("identity str{:?}", identity));
                     let mut hasher = Sha256::new();
                     hasher.update(identity);
                     let result = format!("{:X}", hasher.finalize());
                     let mut identity_hash = HashMap::new();
                     identity_hash.insert(String::from("identity"), parse_request_template(&result));
-                    // tags.insert_qualified("identity", &result, Location::Headers);
-
-                    // testing
-                    rinfo.identity.insert(String::from("identity"), result);
-                    rinfo.identity.insert(String::from("testing"), String::from("fuck"));
+                    tags.insert_qualified("identity", &result, Location::Headers);
 
                     monitor_headers.extend(identity_hash);
                 }
