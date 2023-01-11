@@ -9,6 +9,7 @@ use crate::logs::Logs;
 use crate::requestfields::RequestField;
 use crate::utils::templating::parse_request_template;
 use crate::utils::RequestInfo;
+use itertools::Itertools;
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
 use std::net::IpAddr;
@@ -298,6 +299,10 @@ pub fn tag_request(
                     let mut identity = String::from("");
                     // logs.debug(|| format!("a.header {:?}", a.headers));
                     let mut headers_vec: Vec<String> = a.headers.clone().unwrap_or_default().into_keys().collect();
+                    let hash_tags = a.extra_tags.clone().unwrap();
+                    let tag_vec: Vec<String> = hash_tags.into_iter().collect();
+                    let tag_header = tag_vec.get(0).unwrap_or(&String::from("identity")).clone();
+
                     headers_vec.sort();
                     for k in headers_vec {
                         // let re_str = String::from(".*") ;
@@ -338,8 +343,8 @@ pub fn tag_request(
                     hasher.update(identity);
                     let result = format!("{:X}", hasher.finalize());
                     let mut identity_hash = HashMap::new();
-                    identity_hash.insert(String::from("identity"), parse_request_template(&result));
-                    tags.insert_qualified("identity", &result, Location::Headers);
+                    identity_hash.insert(String::from(&tag_header), parse_request_template(&result));
+                    tags.insert_qualified(&tag_header, &result, Location::Headers);
 
                     monitor_headers.extend(identity_hash);
                 }

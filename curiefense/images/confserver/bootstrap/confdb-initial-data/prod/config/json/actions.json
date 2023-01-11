@@ -114,13 +114,13 @@
         "id": "action-identity",
         "name": "identity",
         "tags": [
-            "action:identity"
+            "action-identity"
         ],
         "type": "identity",
         "params": {
             "status": 200,
             "headers": {
-                "user-agent": ".+?[/\\s][\\d.]+", 
+                "user-agent": ".+?[/\\\\s][\\\\d.]+", 
                 "host": ""
             },
             "content": "identity"
