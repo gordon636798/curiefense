@@ -8,13 +8,12 @@ use crate::interface::{stronger_decision, BlockReason, Location, SimpleActionT, 
 use crate::logs::Logs;
 use crate::requestfields::RequestField;
 use crate::utils::templating::parse_request_template;
+use crate::utils::templating::TemplatePart;
 use crate::utils::RequestInfo;
-use itertools::Itertools;
+use regex::Regex;
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
 use std::net::IpAddr;
-use regex::{Regex, escape};
-use crate::utils::templating::TemplatePart;
 
 struct MatchResult {
     matched: HashSet<Location>,
@@ -183,7 +182,7 @@ pub fn tag_request(
     stats: StatsCollect<BStageSecpol>,
     is_human: bool,
     globalfilters: &[GlobalFilterSection],
-    rinfo: &RequestInfo,
+    rinfo: &mut RequestInfo,
     vtags: &VirtualTags,
     logs: &mut Logs,
 ) -> (Tags, SimpleDecision, StatsCollect<BStageMapped>) {
@@ -306,7 +305,7 @@ pub fn tag_request(
                     headers_vec.sort();
                     for k in headers_vec {
                         // let re_str = String::from(".*") ;
-                        match rinfo_headers.get(&k) {  
+                        match rinfo_headers.get(&k) {
                             Some(v) => {
                                 logs.debug(|| format!("a1.header = {:?}", a.headers));
                                 let temp_vec = a.headers.as_ref().unwrap().get(&k).unwrap(); //get(0).unwrap();
@@ -316,37 +315,36 @@ pub fn tag_request(
                                     for temp in temp_vec {
                                         match temp {
                                             TemplatePart::Raw(s) => tmp_re.push_str(s),
-                                            _ => {},
+                                            _ => {}
                                         }
                                     }
                                     logs.debug(|| format!("tmp_re {:?}", tmp_re));
-                                    let re = Regex::new( tmp_re.as_str()).unwrap();
+                                    let re = Regex::new(tmp_re.as_str()).unwrap();
                                     match re.find(v) {
                                         Some(m) => identity.push_str(&v[m.start()..m.end()]),
                                         _ => identity.push_str("none"),
                                     }
                                     // logs.debug(|| format!("re = {:?}, re_str = {:?}", re, re_str));
-                                    
-                                }
-                                else {
+                                } else {
                                     identity.push_str(v);
                                 }
-
                             }
                             None => identity.push_str("none"),
                         }
-                        identity.push('.');                   
+                        identity.push('.');
                     }
-                    
+
                     logs.debug(|| format!("identity str{:?}", identity));
                     let mut hasher = Sha256::new();
                     hasher.update(identity);
                     let result = format!("{:X}", hasher.finalize());
                     let mut identity_hash = HashMap::new();
                     identity_hash.insert(String::from(&tag_header), parse_request_template(&result));
-                    tags.insert_qualified(&tag_header, &result, Location::Headers);
-
+                    // tags.insert_qualified(&tag_header, &result, Location::Headers);
                     monitor_headers.extend(identity_hash);
+
+                    // add to data to kibana
+                    rinfo.identity.insert(tag_header, result);
                 }
                 let curdec = SimpleDecision::Action(
                     a.clone(),
