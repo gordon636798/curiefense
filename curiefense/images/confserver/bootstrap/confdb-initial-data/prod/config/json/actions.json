@@ -120,25 +120,9 @@
         "params": {
             "status": 200,
             "headers": {
-                "user-agent": "", 
-                "host": ""
+                "testing": "${headers.host}${uri}${headers.user-agent}.+?[/\\\\s][\\\\d.]+${ip}"
             },
             "content": "identity"
-        }
-    },
-    {
-        "id": "action-monitor2",
-        "name": "monitor2",
-        "tags": [
-            "action:monitor2"
-        ],
-        "type": "monitor",
-        "params": {
-            "status": 200,
-            "headers": {
-                "monitor2": "666666"
-            },
-            "content": "monitor2"
         }
     }
 ]
