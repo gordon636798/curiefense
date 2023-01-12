@@ -10,10 +10,9 @@
             "entries": [
                 [
                     "uri",
-                    "/test$",
+                    "/",
                     "content type"
                 ]
-
             ],
             "relation": "OR"
         },
@@ -36,7 +35,6 @@
                     "/test2",
                     "content type"
                 ]
-
             ],
             "relation": "OR"
         },

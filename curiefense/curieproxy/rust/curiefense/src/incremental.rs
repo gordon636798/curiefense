@@ -235,7 +235,7 @@ pub async fn finalize<GH: Grasshopper>(
     let cfrules = mcfrules
         .map(|cfrules| CfRulesArg::Get(cfrules.get(&secpolicy.content_filter_profile.id)))
         .unwrap_or(CfRulesArg::Global);
-    let reqinfo = map_request(
+    let mut reqinfo = map_request(
         &mut logs,
         secpolicy.clone(),
         idata.container_name,
@@ -252,7 +252,8 @@ pub async fn finalize<GH: Grasshopper>(
     };
 
     logs.debug(|| format!("rinfo {:?}", reqinfo));
-    let (mut tags, globalfilter_dec, stats) = tag_request(idata.stats, is_human, globalfilters, &reqinfo, &vtags, &mut logs);
+    let (mut tags, globalfilter_dec, stats) =
+        tag_request(idata.stats, is_human, globalfilters, &mut reqinfo, &vtags, &mut logs);
     tags.insert("all", Location::Request);
 
     let dec = analyze(
