@@ -307,6 +307,7 @@ pub fn tag_request(
                                 TemplatePart::Raw(s) => {
                                     logs.info(|| format!("Rwa(s) = {:?}", s));
                                     regex_rule.push_str(&s);
+                                    pre_rule = cur_rule.clone();
                                 }
                                 TemplatePart::Var(TVar::Selector(sel)) => match selector(rinfo, &sel, Some(&tags)) {
                                     None => {
@@ -348,10 +349,11 @@ pub fn tag_request(
                             }
 
                             if pre_rule != cur_rule {
+                                logs.debug(|| format!("pre {:?} cur {:?}", pre_rule, cur_rule));
                                 if regex_rule.is_empty() {
                                     hash_item.push_str(&pre_rule);
                                 } else {
-                                    logs.info(|| format!("regex = {:?}", regex_rule));
+                                    logs.info(|| format!("regex final = {:?}", regex_rule));
                                     let re = Regex::new(&regex_rule.as_str()).unwrap();
                                     match re.find(pre_rule.as_str()) {
                                         Some(m) => {
@@ -371,6 +373,7 @@ pub fn tag_request(
                         if regex_rule.is_empty() {
                             hash_item.push_str(&cur_rule);
                         } else {
+                            logs.debug(|| format!("regex_rule {:?}", regex_rule));
                             let re = Regex::new(&regex_rule.as_str()).unwrap();
                             match re.find(cur_rule.as_str()) {
                                 Some(m) => hash_item.push_str(&cur_rule[m.start()..m.end()]),
