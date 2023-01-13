@@ -305,7 +305,7 @@ pub fn tag_request(
                             // parse rule
                             match rule {
                                 TemplatePart::Raw(s) => {
-                                    logs.info(|| format!("Rwa(s) = {:?}", s));
+                                    // logs.info(|| format!("Rwa(s) = {:?}", s));
                                     regex_rule.push_str(&s);
                                     pre_rule = cur_rule.clone();
                                 }
@@ -313,67 +313,50 @@ pub fn tag_request(
                                     None => {
                                         pre_rule = cur_rule;
                                         cur_rule = String::from("None");
-                                        logs.info(|| format!("{:?} None", sel));
-                                        hash_item.push_str(".");
-                                        hash_item.push_str("None");
-                                        regex_rule.clear();
+                                        // logs.info(|| format!("{:?} None", sel));
                                     }
                                     Some(Selected::OStr(s)) => {
                                         pre_rule = cur_rule;
-                                        logs.info(|| format!("{:?} Selected::OStr(s) = {:?}", sel, s));
+                                        // logs.info(|| format!("{:?} Selected::OStr(s) = {:?}", sel, s));
                                         cur_rule = s;
-                                        hash_item.push_str(".");
-                                        regex_rule.clear();
                                     }
                                     Some(Selected::Str(s)) => {
                                         pre_rule = cur_rule;
-                                        logs.info(|| format!("{:?} Selected::Str(s) = {:?}", sel, s));
-                                        logs.info(|| format!("regex = {:?}", regex_rule));
+                                        // logs.info(|| format!("{:?} Selected::Str(s) = {:?}", sel, s));
+                                        // logs.info(|| format!("regex = {:?}", regex_rule));
                                         cur_rule = s.clone();
-                                        hash_item.push_str(".");
-                                        regex_rule.clear();
                                     }
                                     Some(Selected::U32(v)) => {
                                         pre_rule = cur_rule;
                                         cur_rule = v.to_string();
-                                        logs.info(|| format!("{:?} Selected::U32(s) = {:?}", sel, v));
-                                        hash_item.push_str(".");
-                                        regex_rule.clear();
+                                        // logs.info(|| format!("{:?} Selected::U32(s) = {:?}", sel, v));
                                     }
                                 },
                                 TemplatePart::Var(TVar::Tag(tagname)) => {
                                     hash_item.push_str(if tags.contains(&tagname) { "true" } else { "false" });
-                                    hash_item.push_str(".");
-                                    regex_rule.clear();
                                 }
                             }
 
                             if pre_rule != cur_rule {
-                                logs.debug(|| format!("pre {:?} cur {:?}", pre_rule, cur_rule));
+                                hash_item.push_str(".");
                                 if regex_rule.is_empty() {
                                     hash_item.push_str(&pre_rule);
                                 } else {
-                                    logs.info(|| format!("regex final = {:?}", regex_rule));
                                     let re = Regex::new(&regex_rule.as_str()).unwrap();
                                     match re.find(pre_rule.as_str()) {
-                                        Some(m) => {
-                                            logs.info(|| format!("regout = {:?}", &pre_rule[m.start()..m.end()]));
-                                            hash_item.push_str(&pre_rule[m.start()..m.end()]);
-                                        }
-                                        _ => {
-                                            logs.info(|| format!("regout = None"));
-                                            hash_item.push_str("none");
-                                        }
+                                        Some(m) => hash_item.push_str(&pre_rule[m.start()..m.end()]),
+                                        _ => hash_item.push_str("none"),
                                     }
+                                    regex_rule.clear();
                                 }
                             }
                         }
 
+                        // the last one
                         hash_item.push('.');
                         if regex_rule.is_empty() {
                             hash_item.push_str(&cur_rule);
                         } else {
-                            logs.debug(|| format!("regex_rule {:?}", regex_rule));
                             let re = Regex::new(&regex_rule.as_str()).unwrap();
                             match re.find(cur_rule.as_str()) {
                                 Some(m) => hash_item.push_str(&cur_rule[m.start()..m.end()]),
@@ -395,52 +378,6 @@ pub fn tag_request(
                         // add to data to kibana
                         rinfo.identity.insert(custom_headers, hash_value);
                     }
-
-                    // read request info headers
-                    // let mut identity = String::from("");
-                    // let hash_tags = a.extra_tags.clone().unwrap();
-                    // let tag_vec: Vec<String> = hash_tags.into_iter().collect();
-                    // let tag_header = tag_vec.get(0).unwrap_or(&String::from("identity")).clone();
-
-                    // for k in headers_vec {
-                    // let re_str = String::from(".*") ;
-                    // match rinfo_headers.get(&k) {
-                    //     Some(v) => {
-                    //         logs.debug(|| format!("a1.header = {:?}", a.headers));
-                    //         let temp_vec = a.headers.as_ref().unwrap().get(&k).unwrap(); //get(0).unwrap();
-                    //         logs.debug(|| format!("temp_vec = {:?}", temp_vec));
-                    //         if temp_vec.is_empty() == false {
-                    //             let mut tmp_re = String::from("");
-                    //             for temp in temp_vec {
-                    //                 match temp {
-                    //                     TemplatePart::Raw(s) => tmp_re.push_str(s),
-                    //                     _ => {}
-                    //                 }
-                    //             }
-                    //             logs.debug(|| format!("tmp_re {:?}", tmp_re));
-                    //             let re = Regex::new(tmp_re.as_str()).unwrap();
-                    //             match re.find(v) {
-                    //                 Some(m) => identity.push_str(&v[m.start()..m.end()]),
-                    //                 _ => identity.push_str("none"),
-                    //             }
-                    //             // logs.debug(|| format!("re = {:?}, re_str = {:?}", re, re_str));
-                    //         } else {
-                    //             identity.push_str(v);
-                    //         }
-                    //     }
-                    //     None => identity.push_str("none"),
-                    // }
-                    // identity.push('.');
-                    // }
-
-                    // logs.debug(|| format!("identity str{:?}", identity));
-                    // let mut hasher = Sha256::new();
-                    // hasher.update(identity);
-                    // let result = format!("{:X}", hasher.finalize());
-                    // let mut identity_hash = HashMap::new();
-                    // identity_hash.insert(String::from(&tag_header), parse_request_template(&result));
-                    // // tags.insert_qualified(&tag_header, &result, Location::Headers);
-                    // monitor_headers.extend(identity_hash);
                 }
                 let curdec = SimpleDecision::Action(
                     a.clone(),
