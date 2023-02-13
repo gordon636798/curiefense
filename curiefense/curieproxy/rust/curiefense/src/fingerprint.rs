@@ -4,7 +4,7 @@ use reqwest::{blocking::Client, Url};
 use crate::fingerprint_redis::fp_redis_async_conn;
 
 pub fn fingerprint_check_visitors(visitor_id: String) -> bool {// Result<bool, Box<dyn Error>> {
-    let api_key = "";
+    let api_key = "TR3X3LI9BlBqLZBGT61h";
     let api_path = "visitors";
     // let visitor_id = "KQmd0wHZAaA5i2L9LjBY";
 
