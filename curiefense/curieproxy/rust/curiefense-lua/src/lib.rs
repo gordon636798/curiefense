@@ -351,7 +351,14 @@ fn inspect_init<GH: Grasshopper>(
             logs.debug(|| format!("visitorID = {}", id));
             let result = async_std::task::block_on(fingerprint::check_visitor_id(id.to_string()));
             if result == false {
-                logs.debug("visitorID not found");
+                logs.debug("visitorID not found, check fingperint saas");
+                let result = fingerprint::fingerprint_check_visitors(id.to_string());
+                if result == false {
+                    logs.debug("visitorID not found in saas");
+                }
+                else {
+                    logs.debug("visitorID found in saas");
+                }
             } else {
                 logs.debug("visitorID found in redis");
             }

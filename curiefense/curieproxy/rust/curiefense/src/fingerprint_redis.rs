@@ -13,7 +13,7 @@ lazy_static! {
 
 /// creates an async connection to a redis server
 pub async fn build_pool() -> anyhow::Result<redis::aio::ConnectionManager> {
-    let server = std::env::var("FP_REDIS_HOST").unwrap_or_else(|_| "192.168.23.131".to_string());
+    let server = std::env::var("FP_REDIS_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
     let port = std::env::var("FP_REDIS_PORT").unwrap_or_else(|_| "6379".to_string());
     let db = std::env::var("REDIS_DB").unwrap_or_else(|_| "0".to_string());
     let username = std::env::var("REDIS_USERNAME").ok();
