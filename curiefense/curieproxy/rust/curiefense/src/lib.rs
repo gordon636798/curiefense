@@ -3,6 +3,8 @@ pub mod analyze;
 pub mod body;
 pub mod config;
 pub mod contentfilter;
+pub mod fingerprint;
+pub mod fingerprint_redis;
 pub mod flow;
 pub mod geo;
 pub mod grasshopper;
