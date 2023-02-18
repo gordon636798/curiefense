@@ -124,5 +124,17 @@
             },
             "content": "identity"
         }
+    },
+    {
+        "id": "action-fingerprint",
+        "name": "fingerprint",
+        "tags": [
+            "action-fingerprint"
+        ],
+        "type": "fingerprint",
+        "params": {
+            "status": 403,
+            "content": "{\"msg\":\"fail\"}"
+        }
     }
 ]

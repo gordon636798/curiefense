@@ -464,6 +464,8 @@ pub enum SimpleActionT {
     Custom { content: String },
     Challenge,
     Identity,
+    Fingerprint { content: String },
+    FingerprintBlock { content: String },
 }
 
 impl SimpleActionT {
@@ -475,6 +477,8 @@ impl SimpleActionT {
             Monitor => 1,
             Skip => 9,
             Identity => 2,
+            Fingerprint { content: _ } => 10,
+            FingerprintBlock { content: _ } => 10,
         }
     }
 
@@ -485,8 +489,12 @@ impl SimpleActionT {
     pub fn to_bdecision(&self) -> BDecision {
         match self {
             SimpleActionT::Skip => BDecision::Skip,
-            SimpleActionT::Monitor | SimpleActionT::Identity => BDecision::Monitor,
-            SimpleActionT::Challenge | SimpleActionT::Custom { content: _ } => BDecision::Blocking,
+            SimpleActionT::Monitor | SimpleActionT::Identity | SimpleActionT::Fingerprint { content: _ } => {
+                BDecision::Monitor
+            }
+            SimpleActionT::Challenge
+            | SimpleActionT::Custom { content: _ }
+            | SimpleActionT::FingerprintBlock { content: _ } => BDecision::Blocking,
         }
     }
 }
@@ -584,6 +592,9 @@ impl SimpleAction {
             },
             RawActionType::Challenge => SimpleActionT::Challenge,
             RawActionType::Identity => SimpleActionT::Identity,
+            RawActionType::Fingerprint => SimpleActionT::Fingerprint {
+                content: rawaction.params.content.clone().unwrap_or_default(),
+            },
         };
         let status = rawaction.params.status.unwrap_or(503);
         let headers = rawaction.params.headers.as_ref().map(|hm| {
@@ -621,7 +632,7 @@ impl SimpleAction {
         match &self.atype {
             SimpleActionT::Skip => action.atype = ActionType::Skip,
             SimpleActionT::Monitor | SimpleActionT::Identity => action.atype = ActionType::Monitor,
-            SimpleActionT::Custom { content } => {
+            SimpleActionT::Custom { content } | SimpleActionT::FingerprintBlock { content } => {
                 action.atype = ActionType::Block;
                 action.content = content.clone();
             }
@@ -630,6 +641,10 @@ impl SimpleAction {
                     return None;
                 }
                 action.atype = ActionType::Monitor;
+            }
+            SimpleActionT::Fingerprint { content } => {
+                action.atype = ActionType::Monitor;
+                action.content = content.clone();
             }
         }
         Some(action)

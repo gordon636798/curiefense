@@ -27,10 +27,6 @@ use userdata::LuaLimitResult;
 
 use userdata::LuaInspectionResult;
 
-// fingerprint
-use async_std;
-use curiefense::fingerprint;
-
 // ******************************************
 // FULL CHECKS
 // ******************************************
@@ -343,30 +339,6 @@ fn inspect_init<GH: Grasshopper>(
         meta: rmeta,
         headers,
         mbody,
-    };
-
-    let fingerprint = raw.headers.get("browserfingerid");
-    match fingerprint {
-        Some(id) => {
-            logs.debug(|| format!("visitorID = {}", id));
-            let result = async_std::task::block_on(fingerprint::check_visitor_id(id.to_string()));
-            if result == false {
-                logs.debug("visitorID not found, check fingperint saas");
-                let result = fingerprint::fingerprint_check_visitors(id.to_string());
-                if result == false {
-                    logs.debug("visitorID not found in saas");
-                }
-                else {
-                    logs.debug("visitorID found in saas");
-                }
-            } else {
-                logs.debug("visitorID found in redis");
-            }
-        }
-        None => {
-            logs.debug("visitorID does not exist");
-            return Err(String::from("visitorID does not exist"));
-        }
     };
 
     let p0 = match inspect_generic_request_map_init(

@@ -240,6 +240,7 @@ pub enum RawActionType {
     Custom,
     Challenge,
     Identity,
+    Fingerprint,
 }
 
 impl std::default::Default for RawActionType {

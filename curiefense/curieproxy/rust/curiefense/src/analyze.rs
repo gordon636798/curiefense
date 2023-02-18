@@ -151,6 +151,7 @@ pub fn analyze_init<GH: Grasshopper>(logs: &mut Logs, mgh: Option<&GH>, p0: APha
 
     let decision = if let SimpleDecision::Action(action, reason) = globalfilter_dec {
         logs.debug(|| format!("Global filter decision {:?}", reason));
+        // logs.debug(|| format!("action =  {:?}", action));
         let decision = action.to_decision(is_human, mgh, &reqinfo, &mut tags, reason);
         if decision.is_final() {
             return InitResult::Res(AnalyzeResult {
@@ -162,10 +163,12 @@ pub fn analyze_init<GH: Grasshopper>(logs: &mut Logs, mgh: Option<&GH>, p0: APha
         }
         // if the decision was not adopted, get the reason vector back
         // (this is because we passed it to action.to_decision)
+        // logs.debug(|| format!("final decision = {:?}", decision));
         decision
     } else {
         Decision::pass(Vec::new())
     };
+    // logs.debug(|| format!("========= decision = {:?}", decision));
 
     let flow_checks = flow_info(logs, &p0.flows, &reqinfo, &tags);
     let info = AnalysisInfo {

@@ -1,7 +1,6 @@
 use crate::config::globalfilter::{
     GlobalFilterEntry, GlobalFilterEntryE, GlobalFilterRule, GlobalFilterSection, PairEntry, SingleEntry,
 };
-use crate::config::matchers::RequestSelector;
 use crate::config::raw::Relation;
 use crate::config::virtualtags::VirtualTags;
 use crate::interface::stats::{BStageMapped, BStageSecpol, StatsCollect};
@@ -17,6 +16,8 @@ use regex::Regex;
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
 use std::net::IpAddr;
+
+use crate::fingerprint;
 
 struct MatchResult {
     matched: HashSet<Location>,
@@ -282,6 +283,7 @@ pub fn tag_request(
     let mut matched = 0;
     let mut decision = SimpleDecision::Pass;
     let mut monitor_headers = HashMap::new();
+    // logs.debug(|| format!("rinfo.headers = {:?}", rinfo.headers.fields));
     for psection in globalfilters {
         let mtch = check_rule(rinfo, &tags, &psection.rule);
         if mtch.matching {
@@ -291,6 +293,7 @@ pub fn tag_request(
                 .with_raw_tags_locs(psection.tags.clone(), &mtch.matched);
             tags.extend(rtags);
             if let Some(a) = &psection.action {
+                logs.debug(|| format!("a = {:?}", a));
                 // merge headers from Monitor decision
                 if a.atype == SimpleActionT::Monitor {
                     monitor_headers.extend(a.headers.clone().unwrap_or_default());
@@ -379,15 +382,66 @@ pub fn tag_request(
                         rinfo.identity.insert(custom_headers, hash_value);
                     }
                 }
-                let curdec = SimpleDecision::Action(
-                    a.clone(),
-                    vec![BlockReason::global_filter(
-                        psection.id.clone(),
-                        psection.name.clone(),
-                        a.atype.to_bdecision(),
-                        &mtch.matched,
-                    )],
-                );
+                let mut block = false;
+                let curdec;
+                let mut ccc = String::from("");
+                match &a.atype {
+                    SimpleActionT::Fingerprint { content } => {
+                        ccc = content.to_string();
+                        let fingerprint = rinfo.headers.fields.get("browserfingerid");
+                        match fingerprint {
+                            Some(fp) => {
+                                let id = fp.clone().0;
+                                // logs.debug(|| format!("visitorID = {}", id));
+                                let result = async_std::task::block_on(fingerprint::check_visitor_id(id.to_string()));
+                                if result == false {
+                                    logs.debug("visitorID not found, check fingperint saas");
+                                    let result = fingerprint::fingerprint_check_visitors(id.to_string());
+                                    if result == false {
+                                        logs.debug("visitorID not found in saas");
+                                        block = true;
+                                    } else {
+                                        logs.debug("visitorID found in saas");
+                                    }
+                                } else {
+                                    logs.debug("visitorID found in redis");
+                                }
+                            }
+                            None => {
+                                logs.debug("visitorID does not exist");
+                                block = true;
+                            }
+                        };
+                    }
+                    _ => (),
+                }
+
+                if !block {
+                    curdec = SimpleDecision::Action(
+                        a.clone(),
+                        vec![BlockReason::global_filter(
+                            psection.id.clone(),
+                            psection.name.clone(),
+                            a.atype.to_bdecision(),
+                            &mtch.matched,
+                        )],
+                    );
+                } else {
+                    let mut clone_a = a.clone();
+                    clone_a.atype = SimpleActionT::FingerprintBlock {
+                        content: ccc.to_string(),
+                    };
+                    curdec = SimpleDecision::Action(
+                        clone_a.clone(),
+                        vec![BlockReason::global_filter(
+                            psection.id.clone(),
+                            psection.name.clone(),
+                            clone_a.atype.to_bdecision(),
+                            &mtch.matched,
+                        )],
+                    );
+                }
+                logs.debug(|| format!("decision = {:?}, curdec = {:?}", decision, curdec));
 
                 decision = stronger_decision(decision, curdec);
             }
@@ -395,6 +449,7 @@ pub fn tag_request(
     }
 
     // if the final decision is a monitor, use cumulated monitor headers as headers
+    logs.debug(|| format!("decision = {:?}", decision));
     decision = if let SimpleDecision::Action(mut action, block_reasons) = decision {
         if action.atype == SimpleActionT::Monitor || action.atype == SimpleActionT::Identity {
             action.headers = Some(monitor_headers);
